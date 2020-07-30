@@ -1,0 +1,13 @@
+.vs
+*.suo
+*.user
+*.log
+_ReSharper.*
+bin
+obj
+packages
+external
+lib
+publish
+PublishProfiles
+webpublish
