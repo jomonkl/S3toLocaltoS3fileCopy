@@ -7,9 +7,9 @@ using System.Text;
 namespace S3.EC2.Integration.Entities
 {
     [Serializable]
+    [JsonObject(Id = "Configurations")]
     public class Configurations
     {
-        public List<S3toEC2Config> S3toEC2Configs { get; set; }
-        public List<EC2toS3Config> EC2ToS3Configs { get; set; }
+        public List<Account> Accounts { get; set; }
     }
 }

@@ -7,6 +7,7 @@ using S3.EC2.Integration.Entities;
 
 using System.IO;
 using Amazon.Util.Internal.PlatformServices;
+using S3.EC2.Integration.S3;
 
 namespace S3.EC2.Integration
 {
@@ -14,12 +15,22 @@ namespace S3.EC2.Integration
     {
         static void Main(string[] args)
         {
+            try
+            {
+                string Configfile = System.Reflection.Assembly.GetExecutingAssembly().Location + AppConfigurations.ConfigFileName;
+                Configurations configs = new JSONSerializer().ReadJSON<Configurations>(Configfile);
 
-            string Configfile = System.Reflection.Assembly.GetExecutingAssembly().Location + AppConfigurations.ConfigFileName;
-            Configurations config = new JSONSerializer().ReadJSON<Configurations>(Configfile);
-
-            //Amazon.S3.
-
+                S3Process s3Process = new S3Process();
+                if (!configs.Equals(null) )
+                {
+                    s3Process.ProcessBuckets(configs);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                //Do something here
+            }
         }
     }
 
