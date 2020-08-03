@@ -21,8 +21,16 @@ namespace S3.EC2.Integration.S3
                 {
                     foreach(Bucket bucket in account.Buckets)
                     {
-                        ProcessS3ToEC2(bucket.S3ToEC2s, bucket.S3Bucket, bucket.S3Region, account.AccessID, account.SecretKey);
-                        ProcessEC2ToS3(bucket.EC2ToS3s, bucket.S3Bucket, bucket.S3Region, account.AccessID, account.SecretKey);
+                        if(!object.Equals(bucket.S3ToEC2s,null))
+                        {
+                            ProcessS3ToEC2(bucket.S3ToEC2s, bucket.S3Bucket, bucket.S3Region, account.AccessID, account.SecretKey);
+                        }
+
+                        if (!object.Equals(bucket.EC2ToS3s,null))
+                        {
+                            ProcessEC2ToS3(bucket.EC2ToS3s, bucket.S3Bucket, bucket.S3Region, account.AccessID, account.SecretKey);
+                        }
+                        
                     }
                 }
 
@@ -69,9 +77,26 @@ namespace S3.EC2.Integration.S3
 
         private bool ProcessEC2ToS3(List<SourceDestFolder> folderList, string bucket, string region, string accessid, string secretkey)
         {
+            RegionEndpoint bucketRegion;
+            IAmazonS3 client;
             try
             {
+                bucketRegion = RegionEndpoint.GetBySystemName(region);
+                if (string.IsNullOrEmpty(accessid) || string.IsNullOrEmpty(secretkey))
+                {
+                    client = new AmazonS3Client(bucketRegion);
+                }
+                else
+                {
+                    client = new AmazonS3Client(accessid, secretkey, bucketRegion);
+                }
 
+                EC2toS3 ec2ToS3 = new EC2toS3();
+                foreach (SourceDestFolder folder in folderList)
+                {
+                    ec2ToS3.PutObjects(client, bucket, folder.S3Folder, folder.EC2folder, folder.FileType).Wait();
+                }
+                client.Dispose();
                 return true;
             }
             catch (Exception ex)

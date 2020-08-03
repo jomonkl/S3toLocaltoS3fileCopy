@@ -7,6 +7,7 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using System.Threading.Tasks;
 using S3.EC2.Integration.Entities;
+using System.Text.RegularExpressions;
 
 namespace S3.EC2.Integration.S3
 {
@@ -16,7 +17,9 @@ namespace S3.EC2.Integration.S3
         private string bucketName; // = "*** bucket name ***";
         private string keyName;// = "*** folder path ***";
         private string localFolderPath;// = "";
-        private string regionEndPoint;// = "";
+        private string fileName;
+        private string fileType;
+        //private string regionEndPoint;// = "";
 
         private IAmazonS3 client;
 
@@ -26,15 +29,19 @@ namespace S3.EC2.Integration.S3
             bucketName = bucket;
             keyName = s3folder;
             localFolderPath = localfolder;
+            fileType = filetype;
 
             await ReadObjectDataAsync();
         }
 
         private async Task ReadObjectDataAsync()
         {
-            string responseBody = "";
             try
             {
+                //S3ResourceId path = S3ResourceId.fromUri("s3://" + bucketName + "/" + keyName + "\\" + fileType);
+
+                //Match match = Regex.Match("hellp.txt", "*.txt");
+
                 ListObjectsV2Request listRequest = new ListObjectsV2Request
                 {
                     BucketName = bucketName,
@@ -42,33 +49,67 @@ namespace S3.EC2.Integration.S3
                     Delimiter = "/"
                 };
 
+                Console.WriteLine("Going to:" + keyName);
                 ListObjectsV2Response listResponse;
 
                 do
                 {
                     listResponse = await client.ListObjectsV2Async(listRequest);
+                    
                     foreach (S3Object entry in listResponse.S3Objects)
                     {
                         Console.WriteLine("key = {0} size = {1}", entry.Key, entry.Size);
-                                               
 
-                        GetObjectRequest objRequest = new GetObjectRequest
-                        {
-                            BucketName = entry.BucketName,
-                            Key = entry.Key
-                        };
-                        using (GetObjectResponse objResponse = await client.GetObjectAsync(objRequest))
-                        using (Stream responseStream = objResponse.ResponseStream)
-                        using (StreamReader reader = new StreamReader(responseStream))
-                        {
-                            string title = objResponse.Metadata["x-amz-meta-title"]; // Assume you have "title" as medata added to the object.
-                            string contentType = objResponse.Headers["Content-Type"];
-                            Console.WriteLine("Object metadata, Title: {0}", title);
-                            Console.WriteLine("Content type: {0}", contentType);
+                        string[] keySplits;
+                        keySplits = entry.Key.Split("/");
 
-                            responseBody = reader.ReadToEnd(); // Now you process the response body.
+                        if (keySplits.Length > 0)
+                        { 
+                            fileName = keySplits[keySplits.Length - 1];
+                        }
+
+                        string fileTypeExp = fileType.Replace("*", "[^*]+");
+
+                        if (Regex.IsMatch(fileName, fileTypeExp, RegexOptions.IgnoreCase))
+                        { 
+                            if (!string.IsNullOrEmpty(fileName))
+                            {
+                                GetObjectRequest objRequest = new GetObjectRequest
+                                {
+                                    BucketName = entry.BucketName,
+                                    Key = entry.Key
+                                };
+                                using (GetObjectResponse objResponse = await client.GetObjectAsync(objRequest))
+                                using (Stream responseStream = objResponse.ResponseStream)
+
+                                using (FileStream fs = new FileStream(localFolderPath + "\\" + fileName, FileMode.Create, FileAccess.Write))
+                                {
+                                    byte[] data = new byte[32768];
+                                    int bytesRead = 0;
+                                    do
+                                    {
+                                        bytesRead = responseStream.Read(data, 0, data.Length);
+                                        fs.Write(data, 0, bytesRead);
+                                    }
+                                    while (bytesRead > 0);
+                                    fs.Flush();
+
+                                    fs.Close();
+                                    responseStream.Close();
+                                }
+                                
+                                var deleteObjectRequest = new DeleteObjectRequest
+                                {
+                                    BucketName = bucketName,
+                                    Key = entry.Key
+                                };
+
+                                Console.WriteLine("Deleting an object");
+                                await client.DeleteObjectAsync(deleteObjectRequest);
+                            }
                         }
                     }
+                    
                     listRequest.ContinuationToken = listResponse.NextContinuationToken;
                 } while (listResponse.IsTruncated);
             }

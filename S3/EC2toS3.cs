@@ -3,54 +3,53 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using System;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace S3.EC2.Integration.S3
 {
     class EC2toS3
     {
-        private const string bucketName = "*** bucket name ***";
-        // For simplicity the example creates two objects from the same file.
-        // You specify key names for these objects.
-        private const string keyName1 = "*** key name for first object created ***";
-        private const string keyName2 = "*** key name for second object created ***";
-        private const string filePath = @"*** file path ***";
-        private static readonly RegionEndpoint bucketRegion = RegionEndpoint.EUWest1;
+        private string bucketName; // = "*** bucket name ***";
+        private string keyName;// = "*** folder path ***";
+        private string localFolderPath;// = "";
+        //private string fileName;
+        private string fileType;
 
         private static IAmazonS3 client;
 
-        public static void ttttMain()
+        public async Task PutObjects(IAmazonS3 iclient, string bucket, string s3folder, string localfolder, string filetype)
         {
-            
+            client = iclient;
+            bucketName = bucket;
+            keyName = s3folder;
+            localFolderPath = localfolder;
+            fileType = filetype;
 
-            client = new AmazonS3Client( bucketRegion);
-            WritingAnObjectAsync().Wait();
+            await WriteObjectDataAsync();
+
         }
 
-        static async Task WritingAnObjectAsync()
+        private async Task WriteObjectDataAsync()
         {
             try
             {
-                // 1. Put object-specify only key name for the new object.
-                var putRequest1 = new PutObjectRequest
+                if (Directory.Exists(localFolderPath))
                 {
-                    BucketName = bucketName,
-                    Key = keyName1,
-                    ContentBody = "sample text"
-                };
+                    string[] fileEntries = Directory.GetFiles(localFolderPath, fileType);
+                    foreach (string fileName in fileEntries)
+                    {
+                        PutObjectRequest putRequest = new PutObjectRequest
+                        {
+                            BucketName = bucketName,
+                            Key = keyName + Path.GetFileName(fileName),
+                            FilePath = fileName
+                        };
 
-                PutObjectResponse response1 = await client.PutObjectAsync(putRequest1);
+                        PutObjectResponse response = await client.PutObjectAsync(putRequest);
 
-                // 2. Put the object-set ContentType and add metadata.
-                var putRequest2 = new PutObjectRequest
-                {
-                    BucketName = bucketName,
-                    Key = keyName2,
-                    FilePath = filePath,
-                    ContentType = "text/plain"
-                };
-
-                putRequest2.Metadata.Add("x-amz-meta-title", "someTitle");
-                PutObjectResponse response2 = await client.PutObjectAsync(putRequest2);
+                        File.Delete(fileName);
+                    }
+                }
             }
             catch (AmazonS3Exception e)
             {
