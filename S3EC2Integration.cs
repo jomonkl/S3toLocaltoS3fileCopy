@@ -17,7 +17,7 @@ namespace S3.EC2.Integration
         {
             try
             {
-                string Configfile = System.Reflection.Assembly.GetExecutingAssembly().Location + AppConfigurations.ConfigFileName;
+                string Configfile = AppConfigurations.ConfigFileName;
                 Configurations configs = new JSONSerializer().ReadJSON<Configurations>(Configfile);
 
                 S3Process s3Process = new S3Process();

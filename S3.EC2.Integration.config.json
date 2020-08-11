@@ -1,0 +1,44 @@
+﻿{
+	"Accounts":
+	[
+		{
+			"AccessID": "<AccessID>",
+			"SecretKey": "<SecretKey>",
+			"Buckets": 
+			[
+				{
+					"S3Bucket": "jomonkl-hotmail-com",
+					"S3Region": "ap-southeast-1",
+					"S3ToEC2s": 
+					[
+						{
+							"S3FolderPath": "test/",
+							"FileType": "*.jpg",
+							"Ec2FilePath": "C:\\JOM\\LEARN\\DotNet\\C#\\R&D\\copyfromS3toEC2\\testfolder\\"
+						},
+						{
+							"S3FolderPath": "test/test1/",
+							"FileType": "*.jpg",
+							"Ec2FilePath": "C:\\JOM\\LEARN\\DotNet\\C#\\R&D\\copyfromS3toEC2\\testfolder\\"
+						}
+					],
+					"EC2ToS3s": 
+					[
+						{
+							"S3FolderPath": "test/",
+							"FileType": "*.jpg",
+							"Ec2FilePath": "C:\\JOM\\LEARN\\DotNet\\C#\\R&D\\copyfromS3toEC2\\testfolder\\toS3\\"
+						},
+						{
+							"S3FolderPath": "test/test1/",
+							"FileType": "*.html",
+							"Ec2FilePath": "C:\\JOM\\LEARN\\DotNet\\C#\\R&D\\copyfromS3toEC2\\testfolder\\toS3\\"
+						}
+					]
+					
+				}
+			]
+		}
+		
+	]
+}
